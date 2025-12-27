@@ -1,88 +1,56 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   LayoutDashboard,
   Wrench,
   Package,
-  DollarSign,
   Settings,
   Users,
-  FileText,
-  BarChart3,
-  HelpCircle,
   LogOut,
-  Home,
   Calendar,
   LogInIcon,
+  Car,
+  DollarSign,
 } from "lucide-react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  selectIsAuthenticated,
+  selectIsAdmin,
+  selectIsMechanic,
+  selectIsCustomer,
+  logoutUser,
+} from "../Redux-Toolkit/slices/authSlice";
 
 const Sidebar = ({ isOpen, onClose }) => {
-  const menuItems = [
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+  const isAdmin = useSelector(selectIsAdmin);
+  const isMechanic = useSelector(selectIsMechanic);
+  const isCustomer = useSelector(selectIsCustomer);
+
+  const handleLogout = async () => {
+    try {
+      await dispatch(logoutUser()).unwrap();
+      onClose();
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout failed", error);
+    }
+  };
+
+  const baseMenuItems = [
     {
       icon: <LayoutDashboard className="w-5 h-5" />,
-      label: "Dashboard",
+      label: "لوحة التحكم",
       path: "/dashboard",
       exact: true,
     },
     {
-      icon: <Home className="w-5 h-5" />,
-      label: "Services Page",
-      path: "/services",
-      exact: true,
-    },
-    {
-      icon: <LogInIcon className="w-5 h-5" />,
-      label: "Login",
-      path: "/login",
-      exact: true,
-    },
-    {
       icon: <Calendar className="w-5 h-5" />,
-      label: "Appointments",
+      label: "المواعيد",
       path: "/appointments",
-      exact: true,
-    },
-    {
-      icon: <Wrench className="w-5 h-5" />,
-      label: "Manage Services",
-      path: "/admin/services",
-      exact: true,
-    },
-    {
-      icon: <Package className="w-5 h-5" />,
-      label: "Inventory",
-      path: "/admin/inventory",
-      exact: true,
-    },
-    {
-      icon: <DollarSign className="w-5 h-5" />,
-      label: "Finance",
-      path: "/admin/finance",
-      exact: true,
-    },
-    {
-      icon: <Users className="w-5 h-5" />,
-      label: "Customers",
-      path: "/admin/customers",
-      exact: true,
-    },
-    {
-      icon: <FileText className="w-5 h-5" />,
-      label: "Reports",
-      path: "/admin/reports",
-      exact: true,
-    },
-    {
-      icon: <BarChart3 className="w-5 h-5" />,
-      label: "Analytics",
-      path: "/admin/analytics",
-      exact: true,
-    },
-    {
-      icon: <Settings className="w-5 h-5" />,
-      label: "Settings",
-      path: "/admin/settings",
-      exact: true,
     },
   ];
 
@@ -91,86 +59,192 @@ const Sidebar = ({ isOpen, onClose }) => {
       {/* Overlay for mobile */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden"
+          className="fixed inset-0 bg-black/50 z-20 lg:hidden backdrop-blur-sm"
           onClick={onClose}
         />
       )}
 
       <aside
         className={`
-        fixed lg:static inset-y-0 left-0 z-30 
-        bg-white border-r w-64 transform transition-transform duration-200
-        ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
-        flex flex-col
-      `}
+          fixed lg:static inset-y-0 left-0 z-30 
+          bg-white border-r w-64 transform transition-transform duration-300 ease-in-out
+          ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+          flex flex-col shadow-xl lg:shadow-none
+        `}
+        dir="rtl"
       >
         {/* Logo */}
         <div className="p-6 border-b">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200">
               <Wrench className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-800">AutoCare Pro</h2>
-              <p className="text-sm text-gray-500">Admin Dashboard</p>
+              <h2 className="text-xl font-black text-gray-800 tracking-tight">
+                AutoCare
+              </h2>
+              <p className="text-[10px] text-blue-600 font-bold uppercase tracking-widest">
+                Workshop Pro
+              </p>
             </div>
           </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4">
-          <ul className="space-y-2">
-            {menuItems.map((item, index) => (
-              <li key={index}>
-                <NavLink
-                  to={item.path}
-                  end={item.exact}
-                  onClick={onClose}
-                  className={({ isActive }) => `
-                    flex items-center space-x-3 px-4 py-3 rounded-lg
-                    transition-colors duration-200
-                    ${
-                      isActive
-                        ? "bg-blue-50 text-blue-600"
-                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                    }
-                  `}
-                >
-                  {item.icon}
-                  <span className="font-medium">{item.label}</span>
-                </NavLink>
-              </li>
-            ))}
+        <nav className="flex-1 p-4 overflow-y-auto custom-scrollbar">
+          <ul className="space-y-1.5">
+            {isAuthenticated &&
+              baseMenuItems.map((item, index) => (
+                <li key={index}>
+                  <SidebarLink item={item} onClose={onClose} />
+                </li>
+              ))}
+
+            {/* Admin Management Section */}
+            {isAdmin && (
+              <div className="mt-8">
+                <p className="px-4 mb-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                  الإدارة العامة
+                </p>
+                <ul className="space-y-1.5">
+                  <SidebarLink
+                    item={{
+                      icon: <Package size={20} />,
+                      label: "أمر تشغيل",
+                      path: "/job-card",
+                    }}
+                    onClose={onClose}
+                  />
+                  <SidebarLink
+                    item={{
+                      icon: <Package size={20} />,
+                      label: "عرض أوامر التشغيل",
+                      path: "/All-jops",
+                    }}
+                    onClose={onClose}
+                  />
+                  <SidebarLink
+                    item={{
+                      icon: <Users size={20} />,
+                      label: "المستخدمين",
+                      path: "/admin/customers",
+                    }}
+                    onClose={onClose}
+                  />
+                  <SidebarLink
+                    item={{
+                      icon: <Package size={20} />,
+                      label: "المخزن",
+                      path: "/admin/inventory",
+                    }}
+                    onClose={onClose}
+                  />
+                  <SidebarLink
+                    item={{
+                      icon: <DollarSign size={20} />,
+                      label: "الماليه",
+                      path: "/admin/finance",
+                    }}
+                    onClose={onClose}
+                  />
+                </ul>
+              </div>
+            )}
+
+            {/* Mechanic Section */}
+            {isMechanic && (
+              <div className="mt-8">
+                <p className="px-4 mb-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                  قسم الفنيين
+                </p>
+                <SidebarLink
+                  item={{
+                    icon: <Wrench size={20} />,
+                    label: "مهامي الحالية",
+                    path: "/workshop/jobs",
+                  }}
+                  onClose={onClose}
+                />
+              </div>
+            )}
+
+            {/* Customer Section */}
+            {isCustomer && (
+              <div className="mt-8">
+                <p className="px-4 mb-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                  حسابي
+                </p>
+                <SidebarLink
+                  item={{
+                    icon: <Car size={20} />,
+                    label: "سياراتي",
+                    path: "/my-vehicles",
+                  }}
+                  onClose={onClose}
+                />
+              </div>
+            )}
           </ul>
         </nav>
 
-        {/* Help & Logout */}
-        <div className="p-4 border-t space-y-2">
-          <NavLink
-            to="/admin/help"
-            onClick={onClose}
-            className={({ isActive }) => `
-              flex items-center space-x-3 px-4 py-3 rounded-lg
-              transition-colors duration-200
-              ${
-                isActive
-                  ? "bg-blue-50 text-blue-600"
-                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-              }
-            `}
-          >
-            <HelpCircle className="w-5 h-5" />
-            <span className="font-medium">Help & Support</span>
-          </NavLink>
-
-          <button className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50 hover:text-gray-900 w-full">
-            <LogOut className="w-5 h-5" />
-            <span className="font-medium">Logout</span>
-          </button>
+        {/* Footer Actions */}
+        <div className="p-4 border-t bg-gray-50/50">
+          {isAuthenticated ? (
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl text-red-600 hover:bg-red-50 hover:text-red-700 w-full transition-all duration-200 font-bold text-sm"
+            >
+              <LogOut className="w-5 h-5" />
+              <span>تسجيل الخروج</span>
+            </button>
+          ) : (
+            <NavLink
+              to="/login"
+              onClick={onClose}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 w-full shadow-md shadow-blue-100 transition-all font-bold text-sm"
+            >
+              <LogInIcon className="w-5 h-5" />
+              <span>تسجيل الدخول</span>
+            </NavLink>
+          )}
         </div>
       </aside>
     </>
   );
 };
 
+// مكون فرعي للروابط لتقليل التكرار
+const SidebarLink = ({ item, onClose }) => (
+  <NavLink
+    to={item.path}
+    end={item.exact}
+    onClick={onClose}
+    className="block w-full" // تأكد أن الرابط يأخذ المساحة كاملة
+  >
+    {({ isActive }) => (
+      <div
+        className={`
+          flex items-center gap-3 px-4 py-3 rounded-xl
+          transition-all duration-200 group
+          ${
+            isActive
+              ? "bg-blue-50 text-blue-700 shadow-sm"
+              : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+          }
+        `}
+      >
+        <span
+          className={`transition-colors ${
+            isActive
+              ? "text-blue-600"
+              : "text-gray-400 group-hover:text-gray-600"
+          }`}
+        >
+          {item.icon}
+        </span>
+        <span className="font-bold text-sm">{item.label}</span>
+      </div>
+    )}
+  </NavLink>
+);
 export default Sidebar;

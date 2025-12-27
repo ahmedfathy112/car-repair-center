@@ -1,236 +1,255 @@
-import React, { useState } from "react";
-import StatsCard from "../components/StatsCard";
-import RecentOrdersTable from "../components/RecentOrdersTable";
-import { Activity, Package, AlertTriangle, CreditCard } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import supabase from "../utils/supabase";
+import {
+  Activity,
+  Package,
+  AlertTriangle,
+  CreditCard,
+  TrendingUp,
+  Clock,
+  CheckCircle,
+  ChevronLeft,
+  DollarSign,
+  Wrench,
+  AlertCircle,
+  Loader2,
+} from "lucide-react";
+import { Link } from "react-router-dom";
+
+const StatCard = ({ title, value, icon: Icon, colorClass, subtitle }) => (
+  <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 flex-1 min-w-[240px]">
+    <div className="flex justify-between items-start mb-4">
+      <div className={`p-3 rounded-xl ${colorClass}`}>
+        <Icon size={24} />
+      </div>
+      {subtitle && (
+        <span className="text-xs font-medium text-gray-400 bg-gray-50 px-2 py-1 rounded-md">
+          {subtitle}
+        </span>
+      )}
+    </div>
+    <div>
+      <h3 className="text-gray-500 text-sm font-medium mb-1">{title}</h3>
+      <div className="text-2xl font-black text-gray-800">{value}</div>
+    </div>
+  </div>
+);
+
+const OrdersTable = ({ orders, loading }) => (
+  <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+    <div className="p-6 border-b border-gray-50 flex justify-between items-center">
+      <h3 className="font-bold text-gray-800 text-lg">آخر طلبات الإصلاح</h3>
+      <Link
+        to={"/admin/finance"}
+        className="text-sm text-blue-600 hover:underline"
+      >
+        عرض الكل
+      </Link>
+    </div>
+    <div className="overflow-x-auto">
+      <table className="w-full text-right">
+        <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
+          <tr>
+            <th className="px-6 py-4">العميل</th>
+            <th className="px-6 py-4">التاريخ</th>
+            <th className="px-6 py-4">المبلغ</th>
+            <th className="px-6 py-4 text-center">الحالة</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-50">
+          {loading ? (
+            <tr>
+              <td colSpan="4" className="p-10 text-center">
+                <Loader2 className="animate-spin mx-auto text-blue-500" />
+              </td>
+            </tr>
+          ) : orders.length === 0 ? (
+            <tr>
+              <td colSpan="4" className="p-10 text-center text-gray-400">
+                لا توجد طلبات حالياً
+              </td>
+            </tr>
+          ) : (
+            orders.map((order) => (
+              <tr key={order.id} className="hover:bg-gray-50 transition-colors">
+                <td className="px-6 py-4 font-bold text-gray-800">
+                  {order.customer_name}
+                </td>
+                <td className="px-6 py-4 text-sm text-gray-500">
+                  {new Date(order.created_at).toLocaleDateString("ar-EG")}
+                </td>
+                <td className="px-6 py-4 font-black text-gray-900">
+                  ${order.total_amount}
+                </td>
+                <td className="px-6 py-4">
+                  <div className="flex justify-center">
+                    <span className="px-3 py-1 bg-green-50 text-green-600 rounded-full text-xs font-bold">
+                      نشط
+                    </span>
+                  </div>
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
+  </div>
+);
 
 const Dashboard = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [recentOrders, setRecentOrders] = useState([]);
+  const [stats, setStats] = useState({
+    totalRevenueMonth: 0,
+    activeOrdersCount: 0,
+    lowStockAlerts: 0,
+    totalTransactions: 0,
+  });
 
-  // Sample data for stats cards
-  const statsData = [
-    { title: "Product Requests", value: "10", label: "VX", prefix: "VX" },
-    { title: "Service Requests", value: "2", label: "SX", prefix: "SX" },
-    {
-      title: "Emergency Service Requests",
-      value: "10",
-      label: "SX",
-      prefix: "SX",
-    },
-    { title: "Transactions", value: "22", label: "NX", prefix: "NX" },
-  ];
+  useEffect(() => {
+    const getDashboardData = async () => {
+      setLoading(true);
 
-  // Sample data for recent orders
-  const recentOrders = [
-    {
-      customer: "Tom Grains",
-      location: "Ur - 7 Served",
-      orderDetails: "Brake Pad Replacement",
-      orderType: "Product",
-      otpVerification: "Verify",
-      orderStatus: "Pending",
-      time: "Just now",
-    },
-    {
-      customer: "Angelina Jolla",
-      location: "Remote team",
-      orderDetails: "Driver Paydownload",
-      orderType: "Emergency",
-      otpVerification: "Verify",
-      orderStatus: "Pending",
-      time: "Just now",
-    },
-    {
-      customer: "Georges Alvarez",
-      location: "The most grateful",
-      orderDetails: "Service Request + cost $250",
-      orderType: "Service",
-      otpVerification: "Verify",
-      orderStatus: "Pending",
-      time: "3 hours ago",
-    },
-    {
-      customer: "Hans Dean",
-      location: "Jurassic record",
-      orderDetails: "Oil Change + 100$ + 50%",
-      orderType: "Product",
-      otpVerification: "Verified",
-      orderStatus: "Completed",
-      time: "3 hours ago",
-    },
-    {
-      customer: "Robert Devaney Jr.",
-      location: "Tom more useful",
-      orderDetails: "Strategy + 750 $150",
-      orderType: "Product",
-      otpVerification: "Verified",
-      orderStatus: "Completed",
-      time: "Today, 5:00 am",
-    },
-    {
-      customer: "Suzafar Johansson",
-      location: "Black widow square",
-      orderDetails: "Suspension + 700 $150",
-      orderType: "Emergency",
-      otpVerification: "Verified",
-      orderStatus: "Completed",
-      time: "Today, 5:00 am",
-    },
-    {
-      customer: "Nv",
-      location: "India",
-      orderDetails: "Device Wheel + 700 $150",
-      orderType: "Product",
-      otpVerification: "Verified",
-      orderStatus: "Completed",
-      time: "Today, 5:00 am",
-    },
-    {
-      customer: "John Smith",
-      location: "Downtown",
-      orderDetails: "Tire Rotation",
-      orderType: "Service",
-      otpVerification: "Verify",
-      orderStatus: "Pending",
-      time: "Today, 8:00 am",
-    },
-  ];
+      // 1. جلب آخر 5 طلبات
+      const { data: orders } = await supabase
+        .from("repair_orders")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(5);
 
-  // Icons for stats cards
-  const statIcons = [
-    <Package key="product" className="w-8 h-8 text-blue-500" />,
-    <Activity key="service" className="w-8 h-8 text-green-500" />,
-    <AlertTriangle key="emergency" className="w-8 h-8 text-red-500" />,
-    <CreditCard key="transactions" className="w-8 h-8 text-purple-500" />,
-  ];
+      setRecentOrders(orders || []);
+
+      // calculate the evalutions of this month
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
+      const { data: monthlyInvoices } = await supabase
+        .from("invoices")
+        .select("total_amount")
+        .eq("status", "paid")
+        .gte("issued_at", startOfMonth.toISOString());
+
+      const revenue =
+        monthlyInvoices?.reduce(
+          (acc, inv) => acc + Number(inv.total_amount),
+          0
+        ) || 0;
+
+      // 3. عدد الطلبات النشطة (بناءً على الـ Repair Orders)
+      const { count: activeCount } = await supabase
+        .from("repair_orders")
+        .select("*", { count: "exact", head: true });
+
+      // 4. قطع غيار شارفت على الانتهاء (أقل من 5 قطع)
+      const { count: lowStock } = await supabase
+        .from("inventory_parts")
+        .select("*", { count: "exact", head: true })
+        .lt("quantity_in_stock", 5);
+
+      setStats({
+        totalRevenueMonth: revenue,
+        activeOrdersCount: activeCount || 0,
+        lowStockAlerts: lowStock || 0,
+        totalTransactions: orders?.length || 0,
+      });
+
+      setLoading(false);
+    };
+
+    getDashboardData();
+  }, []);
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} /> */}
+    <div className="min-h-screen bg-gray-50 p-4 md:p-8 font-sans" dir="rtl">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+          <h1 className="text-3xl font-black text-gray-900">نظرة عامة</h1>
+          <p className="text-gray-500 mt-1">
+            أداء الورشة الحالي وبيانات النظام
+          </p>
+        </div>
+        <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-2xl shadow-sm border border-gray-100">
+          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+          <span className="text-sm font-bold text-gray-700">
+            النظام متصل الآن
+          </span>
+        </div>
+      </div>
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* <DashboardHeader onMenuClick={() => setSidebarOpen(true)} /> */}
+      {/* Stats Grid */}
+      <div className="flex flex-wrap gap-6 mb-8">
+        <StatCard
+          title="أرباح الشهر الحالي"
+          value={`$${stats.totalRevenueMonth.toLocaleString()}`}
+          icon={DollarSign}
+          colorClass="bg-green-100 text-green-600"
+          subtitle="تم تحصيلها"
+        />
+        <StatCard
+          title="طلبات الإصلاح"
+          value={stats.activeOrdersCount}
+          icon={Wrench}
+          colorClass="bg-blue-100 text-blue-600"
+          subtitle="إجمالي الطلبات"
+        />
+        <StatCard
+          title="تنبيهات المخزن"
+          value={stats.lowStockAlerts}
+          icon={AlertCircle}
+          colorClass="bg-orange-100 text-orange-600"
+          subtitle="قطع شارفت على الانتهاء"
+        />
+        <StatCard
+          title="عمليات اليوم"
+          value={stats.totalTransactions}
+          icon={Activity}
+          colorClass="bg-purple-100 text-purple-600"
+          subtitle="نشاط النظام"
+        />
+      </div>
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">
-          {/* Live Activity Section */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold text-gray-800">
-                Live Activity
-              </h2>
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                <span>Live</span>
-              </div>
-            </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Table Column */}
+        <div className="lg:col-span-2">
+          <OrdersTable orders={recentOrders} loading={loading} />
+        </div>
 
-            <div className="flex flex-col md:flex-row gap-4">
-              {statsData.map((stat, index) => (
-                <div
-                  key={index}
-                  className="bg-white rounded-xl shadow-sm p-6 flex-1"
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h3 className="text-gray-600 text-sm font-medium mb-2">
-                        {stat.title}
-                      </h3>
-                      <div className="flex items-baseline">
-                        <span className="text-gray-400 text-sm mr-2">
-                          {stat.prefix}:
-                        </span>
-                        <span className="text-3xl font-bold text-gray-800">
-                          {stat.value}
-                        </span>
-                      </div>
-                    </div>
-                    {statIcons[index]}
-                  </div>
-                  <p className="text-gray-500 text-sm">{stat.label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Recent Orders Section */}
-          <div className="mb-8">
-            <RecentOrdersTable orders={recentOrders} />
-          </div>
-
-          {/* Quick Actions */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h3 className="font-medium text-gray-800 mb-2">Quick Actions</h3>
-              <div className="space-y-2">
-                <button className="w-full text-left px-3 py-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 text-sm">
-                  + New Service Request
-                </button>
-                <button className="w-full text-left px-3 py-2 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 text-sm">
-                  View All Orders
-                </button>
-                <button className="w-full text-left px-3 py-2 rounded-lg bg-yellow-50 text-yellow-600 hover:bg-yellow-100 text-sm">
-                  Generate Report
-                </button>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-sm p-6 md:col-span-2 lg:col-span-2">
-              <h3 className="font-medium text-gray-800 mb-4">
-                Activity Overview
-              </h3>
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-600">Today's Orders</span>
-                    <span className="font-medium">8</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-blue-600 h-2 rounded-full"
-                      style={{ width: "80%" }}
-                    ></div>
-                  </div>
-                </div>
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-600">Pending Verification</span>
-                    <span className="font-medium">3</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-yellow-500 h-2 rounded-full"
-                      style={{ width: "30%" }}
-                    ></div>
-                  </div>
-                </div>
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-600">Emergency Requests</span>
-                    <span className="font-medium">2</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-red-600 h-2 rounded-full"
-                      style={{ width: "20%" }}
-                    ></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h3 className="font-medium text-gray-800 mb-4">Total Revenue</h3>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-gray-800 mb-2">
-                  $2,850
-                </div>
-                <div className="text-sm text-gray-500 mb-4">This Month</div>
-                <div className="text-xs text-green-600 bg-green-50 px-3 py-1 rounded-full inline-block">
-                  +12.5% from last month
-                </div>
-              </div>
+        {/* Side Summary Column */}
+        <div className="flex flex-col gap-6">
+          {/* Quick Actions Card */}
+          <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
+            <h3 className="font-bold text-gray-800 mb-4">إجراءات سريعة</h3>
+            <div className="grid grid-cols-1 gap-3">
+              <button className="flex items-center gap-3 p-3 rounded-xl bg-blue-50 text-blue-700 font-bold hover:bg-blue-100 transition-colors">
+                <Wrench size={18} /> طلب إصلاح جديد
+              </button>
+              <button className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 text-gray-700 font-bold hover:bg-gray-100 transition-colors">
+                <Package size={18} /> جرد المخزن
+              </button>
             </div>
           </div>
-        </main>
+
+          {/* Business Goal Card */}
+          <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl shadow-lg p-6 text-white">
+            <h3 className="text-lg font-bold mb-2">مستوى الإنجاز</h3>
+            <p className="text-blue-100 text-xs mb-6">
+              معدل إنهاء المهام اليومي مقارنة بالأمس
+            </p>
+            <div className="flex items-end gap-2 mb-2">
+              <span className="text-4xl font-black">82%</span>
+              <TrendingUp size={24} className="mb-1 text-green-300" />
+            </div>
+            <div className="w-full bg-white/20 rounded-full h-2">
+              <div
+                className="bg-white h-2 rounded-full"
+                style={{ width: "82%" }}
+              ></div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
