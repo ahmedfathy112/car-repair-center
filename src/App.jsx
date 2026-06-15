@@ -8,7 +8,7 @@ import {
 import MainLayout from "./MainLayout";
 import Dashboard from "./pages/Home";
 import ServicesPage from "./pages/Services";
-// import ManageServices from "./pages/Operation";
+
 import InventoryPage from "./pages/Inventory";
 import FinancePage from "./pages/Finance";
 import AppointmentsPage from "./pages/Appointments";

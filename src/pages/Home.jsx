@@ -36,7 +36,7 @@ const StatCard = ({ title, value, icon: Icon, colorClass, subtitle }) => (
 );
 
 const OrdersTable = ({ orders, loading }) => (
-  <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+  <div className="bg-white w-full rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
     <div className="p-6 border-b border-gray-50 flex justify-between items-center">
       <h3 className="font-bold text-gray-800 text-lg">آخر طلبات الإصلاح</h3>
       <Link
@@ -111,7 +111,6 @@ const Dashboard = () => {
     const getDashboardData = async () => {
       setLoading(true);
 
-      // 1. جلب آخر 5 طلبات
       const { data: orders } = await supabase
         .from("repair_orders")
         .select("*")
@@ -120,7 +119,7 @@ const Dashboard = () => {
 
       setRecentOrders(orders || []);
 
-      // calculate the evalutions of this month
+      // calculate the revenue of this month
       const startOfMonth = new Date();
       startOfMonth.setDate(1);
       startOfMonth.setHours(0, 0, 0, 0);
@@ -134,15 +133,13 @@ const Dashboard = () => {
       const revenue =
         monthlyInvoices?.reduce(
           (acc, inv) => acc + Number(inv.total_amount),
-          0
+          0,
         ) || 0;
 
-      // 3. عدد الطلبات النشطة (بناءً على الـ Repair Orders)
       const { count: activeCount } = await supabase
         .from("repair_orders")
         .select("*", { count: "exact", head: true });
 
-      // 4. قطع غيار شارفت على الانتهاء (أقل من 5 قطع)
       const { count: lowStock } = await supabase
         .from("inventory_parts")
         .select("*", { count: "exact", head: true })
@@ -211,44 +208,10 @@ const Dashboard = () => {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="flex  w-full gap-8">
         {/* Table Column */}
-        <div className="lg:col-span-2">
+        <div className="w-full md:w-2/3">
           <OrdersTable orders={recentOrders} loading={loading} />
-        </div>
-
-        {/* Side Summary Column */}
-        <div className="flex flex-col gap-6">
-          {/* Quick Actions Card */}
-          <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
-            <h3 className="font-bold text-gray-800 mb-4">إجراءات سريعة</h3>
-            <div className="grid grid-cols-1 gap-3">
-              <button className="flex items-center gap-3 p-3 rounded-xl bg-blue-50 text-blue-700 font-bold hover:bg-blue-100 transition-colors">
-                <Wrench size={18} /> طلب إصلاح جديد
-              </button>
-              <button className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 text-gray-700 font-bold hover:bg-gray-100 transition-colors">
-                <Package size={18} /> جرد المخزن
-              </button>
-            </div>
-          </div>
-
-          {/* Business Goal Card */}
-          <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl shadow-lg p-6 text-white">
-            <h3 className="text-lg font-bold mb-2">مستوى الإنجاز</h3>
-            <p className="text-blue-100 text-xs mb-6">
-              معدل إنهاء المهام اليومي مقارنة بالأمس
-            </p>
-            <div className="flex items-end gap-2 mb-2">
-              <span className="text-4xl font-black">82%</span>
-              <TrendingUp size={24} className="mb-1 text-green-300" />
-            </div>
-            <div className="w-full bg-white/20 rounded-full h-2">
-              <div
-                className="bg-white h-2 rounded-full"
-                style={{ width: "82%" }}
-              ></div>
-            </div>
-          </div>
         </div>
       </div>
     </div>

@@ -213,13 +213,12 @@ const Sidebar = ({ isOpen, onClose }) => {
   );
 };
 
-// مكون فرعي للروابط لتقليل التكرار
 const SidebarLink = ({ item, onClose }) => (
   <NavLink
     to={item.path}
     end={item.exact}
     onClick={onClose}
-    className="block w-full" // تأكد أن الرابط يأخذ المساحة كاملة
+    className="block w-full"
   >
     {({ isActive }) => (
       <div

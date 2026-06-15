@@ -3,7 +3,6 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import supabase from "../../utils/supabase";
 import toast from "react-hot-toast";
 
-// دالة مساعدة للتعامل مع أخطاء قاعدة البيانات
 const handleDatabaseError = (error) => {
   console.error("Database error details:", error);
 
@@ -43,7 +42,6 @@ const handleDatabaseError = (error) => {
   };
 };
 
-// دالة لإنشاء ملف شخصي تلقائيًا إذا لم يكن موجودًا
 const createUserProfileIfNotExists = async (userId, email) => {
   try {
     // تحقق أولاً إذا كان الملف الشخصي موجودًا
@@ -85,7 +83,6 @@ const createUserProfileIfNotExists = async (userId, email) => {
   }
 };
 
-// دالة محسنة لجلب بيانات الملف الشخصي
 const fetchUserProfile = async (userId) => {
   try {
     // أولاً: حاول جلب البيانات من جدول profiles
@@ -261,17 +258,13 @@ export const checkUserSession = createAsyncThunk(
   "auth/checkUserSession",
   async (_, { rejectWithValue, dispatch }) => {
     try {
-      // 1. تحديد اسم المفتاح الخاص بـ Supabase في المتصفح
-      // ملاحظة: استبدل 'sb-wvhbhaafwezqensepgto-auth-token' بمتغير بيئة إذا كان يتغير
       const STORAGE_KEY = "sb-wvhbhaafwezqensepgto-auth-token";
       const savedSession = localStorage.getItem(STORAGE_KEY);
 
-      // إذا لم يوجد أي توكن في المتصفح، لا داعي لتكملة الطلب
       if (!savedSession) {
         return rejectWithValue("No session found in local storage");
       }
 
-      // 2. طلب الجلسة رسمياً من سوبابيس (سيتولى هو التحقق من الـ access_token)
       const { data, error } = await supabase.auth.getSession();
 
       if (error) throw error;
@@ -279,11 +272,8 @@ export const checkUserSession = createAsyncThunk(
       if (data?.session) {
         const user = data.session.user;
 
-        // 3. جلب بيانات الملف الشخصي (Profile)
-        // يمكننا محاولة جلب الدور من metadata التوكن أولاً كحل سريع
         const userRole = user.user_metadata?.role || "customer";
 
-        // استدعاء دالة fetchUserProfile لجلب البيانات الكاملة من قاعدة البيانات
         const userProfile = await fetchUserProfile(user.id);
 
         const userData = {
@@ -301,7 +291,6 @@ export const checkUserSession = createAsyncThunk(
           IsCustomer: (userProfile?.role || userRole) === "customer",
         };
 
-        // 4. تحديث الـ Redux State فوراً
         dispatch(setCredentials(userData));
         return userData;
       }
@@ -328,7 +317,6 @@ export const logoutUser = createAsyncThunk(
   }
 );
 
-// دالة لإعادة تعيين كلمة المرور
 export const resetPassword = createAsyncThunk(
   "auth/resetPassword",
   async (email, { rejectWithValue }) => {
@@ -350,7 +338,6 @@ export const resetPassword = createAsyncThunk(
   }
 );
 
-// دالة لتحديث بيانات الملف الشخصي
 export const updateUserProfile = createAsyncThunk(
   "auth/updateUserProfile",
   async (profileData, { rejectWithValue, getState }) => {
@@ -440,7 +427,6 @@ const authSlice = createSlice({
       })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.loading = false;
-        // تم تعيين البيانات في thunk عبر dispatch
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
@@ -461,7 +447,6 @@ const authSlice = createSlice({
       })
       .addCase(checkUserSession.fulfilled, (state, action) => {
         state.loading = false;
-        // تم تعيين البيانات في thunk عبر dispatch
       })
       .addCase(checkUserSession.rejected, (state, action) => {
         state.loading = false;

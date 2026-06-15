@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Outlet } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
-import DashboardHeader from "./components/DashboardHeader";
+import { Logs } from "lucide-react";
 
 const MainLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -9,12 +9,16 @@ const MainLayout = () => {
   return (
     <div className="flex h-screen bg-gray-50">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <Logs
+        onClick={() => setSidebarOpen(true)}
+        className={`cursor-pointer mx-2.5 my-3 p-1.5 hidden max-md:block ${sidebarOpen ? "hidden" : "block"} `}
+        width={50}
+        height={50}
+      />
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <DashboardHeader onMenuClick={() => setSidebarOpen(true)} />
-
         <main className="flex-1 overflow-y-auto">
-          <Outlet /> {/* This is where page content will be rendered */}
+          <Outlet />
         </main>
       </div>
     </div>
